@@ -24,7 +24,7 @@ player_card_2, dealer_card
 }
 \description{
 compares the hand win probability for hit and stand given the
-player and dealer starting cards
+player and dealer starting cards -- test commit does this work
 }
 \author{
 David Clement
