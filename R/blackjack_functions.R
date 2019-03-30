@@ -2,7 +2,7 @@
 
 #' @title hitStandProbs
 #' @description compares the hand win probability for hit and stand given the
-#' player and dealer starting cards -- test commit does this work
+#' player and dealer starting cards
 #' @author David Clement
 #' @param p1 first player card (order with p2 doesn't matter)
 #' @param p2 second player card
