@@ -105,10 +105,10 @@ stand <- function(player_total, dealer_total, cards_remaining) {
                   dealer_pmf[as.character(player_total)],
                   0)
 
-  p_player_wins <- (sum(dealer_pmf[as.numeric(names(dealer_pmf)) < player_total]) + dealer_pmf["22"]) /
-    (1 - p_tie)
+  p_player_wins <- (sum(dealer_pmf[as.numeric(names(dealer_pmf)) < player_total]) + dealer_pmf["22"]) +
+    0.5 * p_tie
 
-  return(p_player_wins)
+  return(as.numeric(p_player_wins))
 
 }
 
