@@ -7,7 +7,8 @@ test_that("test.dealer", {
   cards_remaining <- rep(0, 10)
   cards_remaining[c(2,7)] <- 1
   dealer_pmf <- dealer(dealer_total = 15,
-                       cards_remaining = cards_remaining)
+                       cards_remaining = cards_remaining,
+                       is_ace = FALSE)
   expect_equal(as.numeric(dealer_pmf["17"]), 0.5)
   expect_equal(as.numeric(dealer_pmf["22"]), 0.5)
 
@@ -17,6 +18,7 @@ test_that("test.dealer", {
   cards_remaining[c(1,9,10)] <- 1
   dealer_pmf <- dealer(dealer_total = 10,
                        cards_remaining = cards_remaining,
+                       is_ace = FALSE,
                        is_first = TRUE)
   expect_equal(as.numeric(dealer_pmf["19"]), 0.5)
   expect_equal(as.numeric(dealer_pmf["20"]), 0.5)
@@ -26,7 +28,8 @@ test_that("test.dealer", {
   cards_remaining <- rep(0, 10)
   cards_remaining[c(5, 6, 10)] <- 1
   dealer_pmf <- dealer(dealer_total = 10,
-                       cards_remaining = cards_remaining)
+                       cards_remaining = cards_remaining,
+                       is_ace = FALSE)
   expect_equal(as.numeric(dealer_pmf), c(rep(0,3), rep(1/3,3)))
 
 })
@@ -64,10 +67,65 @@ test_that("test.hit", {
   cards_remaining[c(5, 6, 10)] <- 1
   p_hit <- hit(player_total = 15,
                dealer_total = 10,
-               cards_remaining = cards_remaining)
+               cards_remaining = cards_remaining,
+               is_ace = FALSE)
   expect_equal(p_hit, 1/2 + 1/12)
 
 })
+
+
+
+test_that("test.soft_hands", {
+
+  # dealer
+  cards_remaining <- rep(0, 10)
+  cards_remaining[c(7, 10)] <- 1
+  dealer_pmf <- dealer(dealer_total = 7,
+                       cards_remaining = cards_remaining,
+                       is_ace = TRUE)
+  expect_equal(as.numeric(dealer_pmf["17"]), 0.5)
+  expect_equal(as.numeric(dealer_pmf["22"]), 0.5)
+
+  cards_remaining <- rep(0, 10)
+  cards_remaining[c(7, 10)] <- 1
+  dealer_pmf <- dealer(dealer_total = 8,
+                       cards_remaining = cards_remaining,
+                       is_ace = TRUE)
+  expect_equal(as.numeric(dealer_pmf["18"]), 1)
+
+  # hit
+  # will win as long as player doesn't get both tens
+  cards_remaining <- rep(0, 10)
+  cards_remaining[c(5, 6)] <- 1
+  cards_remaining[10] <- 2
+  p_hit <- hit(player_total = 5,
+               dealer_total = 8,
+               cards_remaining = cards_remaining,
+               is_ace = TRUE)
+  expect_equal(p_hit, 1 - 1/6)
+
+  # dealer must have the 9
+  cards_remaining <- rep(0, 10)
+  cards_remaining[9] <- 1
+  cards_remaining[10] <- 6
+  p_hit <- hit(player_total = 12,
+               dealer_total = 1,
+               cards_remaining = cards_remaining,
+               is_ace = FALSE)
+  expect_equal(p_hit, 0)
+
+  # dealer must have the 9. player has 1/7 chance of getting 21
+  cards_remaining <- rep(0, 10)
+  cards_remaining[9] <- 2
+  cards_remaining[10] <- 6
+  p_hit <- hit(player_total = 12,
+               dealer_total = 1,
+               cards_remaining = cards_remaining,
+               is_ace = FALSE)
+  expect_equal(p_hit, 0)
+
+})
+
 
 
 
