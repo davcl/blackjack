@@ -1,6 +1,14 @@
 require(testthat)
 context("exact_probabilities")
 
+
+test_that("test.remaining_cards", {
+
+  x <- findRemainingCards(c(1,2,3), n_decks = 1)
+  expect_equal(x, c(3,3,3,4,4,4,4,4,4,16))
+
+})
+
 test_that("test.dealer", {
 
   # test that the two dealer possibilities are both correct
