@@ -198,10 +198,6 @@ nextCardProbs <- function(cards_remaining, dealer_card = NA) {
 #' @export
 hit <- function(player_total, dealer_card, cards_remaining, is_ace) {
 
-  if(player_total < 12 & !is_ace) {
-    stop("player total too low to stand, so comparison not needed")
-  }
-
   next_card_probs <- nextCardProbs(cards_remaining = cards_remaining,
                                    dealer_card = dealer_card)
 
