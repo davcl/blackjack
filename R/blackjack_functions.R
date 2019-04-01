@@ -19,35 +19,150 @@ hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 6) {
   cards_remaining <- findRemainingCards(cards_gone, n_decks)
 
   p_win_if_stand <- stand(player_total = p1 + p2,
-                          dealer_total = d,
+                          dealer_card = d,
                           cards_remaining = cards_remaining)
+  stand_roi <- p_win_if_stand - (1 - p_win_if_stand)
 
   p_win_if_hit <- hit(player_total = p1 + p2,
-                      dealer_total = d,
+                      dealer_card = d,
                       cards_remaining = cards_remaining)
+  hit_roi <- p_win_if_hit - (1 - p_win_if_hit)
 
-  return(data.frame(p_win_if_stand = p_win_if_stand,
-                    p_win_if_hit = p_win_if_hit,
+  split_roi <- ifelse(p1 == p2,
+                      split(p = p1,
+                            cards_remaining = cards_remaining,
+                            dealer_card = d),
+                      NA)
+
+  double_down_roi <- doubleDown(player_total = p1 + p2,
+                                cards_remaining = cards_remaining,
+                                dealer_card = d,
+                                is_ace = any(c(p1, p2) == 2))
+
+
+  return(data.frame(stand_roi = stand_roi,
+                    hit_roi = hit_roi,
+                    split_roi = split_roi,
+                    double_down_roi = double_down_roi,
                     player_card_1 = p1,
                     player_card_2 = p2,
                     dealer_card = d))
 
 }
 
-#' @title adjNextCardProbsForNoDealerBlackjack
+
+
+#' @title split
+#' @description returns unit ROI for a split
+#' @author David Clement
+#' @param p the value of the card being split
+#' @param cards_remaining vector with number of each type of card remaining
+#' @param dealer_card dealer card
+#' @return expected winnings of the split
+#' @export
+split <- function(p, cards_remaining, dealer_card) {
+
+  next_card_probs <- nextCardProbs(cards_remaining = cards_remaining,
+                                   dealer_card = dealer_card)
+
+  prob_same_card <- next_card_probs[p]
+
+  cards_remaining_tmp <- cards_remaining
+  cards_remaining_tmp[p] <- max(0, cards_remaining_tmp[p] - 1)
+
+
+  p_win_hand_if_split <- hit(player_total = p,
+                             dealer_card = dealer_card,
+                             cards_remaining = cards_remaining,
+                             is_ace = p == 1)
+
+  p_win_hand_if_not_split <- hit(player_total = 2 * p,
+                                 dealer_card = dealer_card,
+                                 cards_remaining = cards_remaining,
+                                 is_ace = p == 1)
+
+  r <- p_same_card * split(p = p,
+                           cards_remaining = cards_remaining_tmp,
+                           dealer_card = dealer_card) +
+    (1 - p_same_card) * (p_win_hand - (1 - p_win_hand))
+
+  # law of total expectation implies second hand has same win prob as first
+  r <- 2 * r
+
+
+  return(r)
+
+
+}
+
+
+
+#' @title doubleDown
+#' @description returns unit ROI for a double down (hit exactly one more card)
+#' @author David Clement
+#' @param player_total sum of the two cards so far
+#' @param cards_remaining vector with number of each type of card remaining
+#' @param dealer_card dealer card
+#' @param is_ace \code{TRUE} if the hand contains an ace
+#' @return expected winnings of the double down
+#' @export
+doubleDown <- function(player_total, cards_remaining, dealer_card, is_ace) {
+
+  next_card_probs <- nextCardProbs(cards_remaining = cards_remaining,
+                                   dealer_card = dealer_card)
+
+  poss_cards <- which(next_card_probs > 0)
+
+  r <- 0
+  # i is hand 1 and j is hand 2
+  for(i in poss_cards) {
+
+    cards_remaining_tmp <- cards_remaining
+    cards_remaining_tmp[i] <- cards_remaining_tmp[i] - 1
+
+    if(player_total + i <= 21) {
+      p_win_hand <- stand(player_total = player_total + i,
+                          dealer_card = dealer_card,
+                          cards_remaining = cards_remaining_tmp)
+    } else {
+      p_win_hand <- 0
+    }
+
+
+    if(is_ace & (player_total + 10 + i <= 21)) {
+      p_win_soft_hand <- stand(player_total = player_total + 10 + i,
+                               dealer_card = dealer_card,
+                          cards_remaining = cards_remaining_tmp)
+
+      p_win_hand <- max(p_win_hand, p_win_soft_hand)
+    }
+
+    r <- r + next_card_probs[i] * (p_win_hand - (1 - p_win_hand))
+
+  }
+
+  # double the stake
+  r <- 2 * r
+
+  return(r)
+
+
+}
+
+#' @title nextCardProbs
 #' @description not only do we have to adjust the \code{dealer} function when he's
 #' showing 1 or 10, we have to slightly modify the player next card probs
 #' @author David Clement
-#' @param next_card_probs before accounting for "not dealer card"
 #' @param dealer_card the card the dealer has. if 1 then they can't get 10 next,
-#' if 10 then they can't get 1 next
+#' if 10 then they can't get 1 next. NA is treated like 2:9
 #' @param cards_remaining vector with number of each type of card remaining
 #' @return vector of adjusted player next card probabilities
 #' @export
-adjNextCardProbsForNoDealerBlackjack <- function(next_card_probs, dealer_card,
-                                                 cards_remaining) {
+nextCardProbs <- function(cards_remaining, dealer_card = NA) {
 
-  if(dealer_card %in% 2:9) {
+  next_card_probs <- cards_remaining / sum(cards_remaining)
+
+  if(is.na(dealer_card) | dealer_card %in% 2:9) {
     return(next_card_probs)
   }
 
@@ -58,7 +173,7 @@ adjNextCardProbsForNoDealerBlackjack <- function(next_card_probs, dealer_card,
 
   # increase probability of getting the card dealer can't have
   next_card_probs[not_dealer_card] <- next_card_probs[not_dealer_card] *
-    sum(cards_remaining) / (sum(cards_remaining) - cards_remaining[not_dealer_card])
+    sum(cards_remaining) / (sum(cards_remaining) - 1)
 
   # decrease probabilities of all other cards by the same multiplicative amount
   # while maintaining the sum to 1 constraint
@@ -69,38 +184,26 @@ adjNextCardProbsForNoDealerBlackjack <- function(next_card_probs, dealer_card,
 }
 
 
+
+
+
 #' @title hit
 #' @description recursive function to find player win probability when they hit
 #' @author David Clement
 #' @param player_total sum of player cards so far in the hand
-#' @param dealer_total what dealer card is showing
+#' @param dealer_card what dealer card is showing
 #' @param cards_remaining vector of counts for each of 1 through 10
 #' @param is_ace boolean indicating whether one of player cards is an ace
 #' @return a player win probability
 #' @export
-hit <- function(player_total, dealer_total, cards_remaining, is_ace) {
+hit <- function(player_total, dealer_card, cards_remaining, is_ace) {
 
   if(player_total < 12 & !is_ace) {
     stop("player total too low to stand, so comparison not needed")
   }
 
-  next_card_probs <- cards_remaining / sum(cards_remaining)
-  next_card_probs <- adjNextCardProbsForNoDealerBlackjack(next_card_probs = next_card_probs,
-                                                          dealer_card = dealer_total,
-                                                          cards_remaining = cards_remaining)
-
-
-  if(dealer_total == 1) {
-    next_card_probs[10] <- next_card_probs[10] * sum(cards_remaining)/
-      (sum(cards_remaining) - 1)
-    next_card_probs[1:9] <- next_card_probs[1:9] *
-      (1 - next_card_probs[10])/sum(next_card_probs[1:9])
-  } else if(dealer_total == 10) {
-    next_card_probs[1] <- next_card_probs[1] * sum(cards_remaining)/
-      (sum(cards_remaining) - 1)
-    next_card_probs[2:10] <- next_card_probs[2:10] *
-      (1 - next_card_probs[1])/sum(next_card_probs[2:10])
-  }
+  next_card_probs <- nextCardProbs(cards_remaining = cards_remaining,
+                                   dealer_card = dealer_card)
 
   # player total must be at least 12; otherwise we'd hit for sure
   max_without_bust <- 21 - player_total
@@ -120,14 +223,14 @@ hit <- function(player_total, dealer_total, cards_remaining, is_ace) {
 
       to_return <- to_return +
         next_card_probs[i] * max(hit(player_total = player_total + i,
-                                     dealer_total = dealer_total,
+                                     dealer_card = dealer_card,
                                      cards_remaining = cards_remaining_tmp,
                                      is_ace = is_ace_now),
                                  stand(player_total = ifelse(player_total + i <= 11 &
                                                                is_ace_now,
                                                              player_total + i + 10,
                                                              player_total + i),
-                                       dealer_total = dealer_total,
+                                       dealer_card = dealer_card,
                                        cards_remaining = cards_remaining_tmp))
 
     }
@@ -136,7 +239,7 @@ hit <- function(player_total, dealer_total, cards_remaining, is_ace) {
   } else {
 
     to_return <- stand(player_total = 21,
-                       dealer_total = dealer_total,
+                       dealer_card = dealer_card,
                        cards_remaining = cards_remaining)
   }
 
@@ -148,15 +251,15 @@ hit <- function(player_total, dealer_total, cards_remaining, is_ace) {
 #' @description function to find player win probability if they stand
 #' @author David Clement
 #' @param player_total sum of player cards so far in the hand
-#' @param dealer_total what dealer card is showing
+#' @param dealer_card what dealer card is showing
 #' @param cards_remaining vector of counts for each of 1 through 10
 #' @return a player win probability
 #' @export
-stand <- function(player_total, dealer_total, cards_remaining) {
+stand <- function(player_total, dealer_card, cards_remaining) {
 
-  dealer_pmf <- dealer(dealer_total = dealer_total,
+  dealer_pmf <- dealer(dealer_total = dealer_card,
                        cards_remaining = cards_remaining,
-                       is_ace = dealer_total == 1,
+                       is_ace = dealer_card == 1,
                        is_first = TRUE)
 
   p_tie <- ifelse(player_total >= 17,
@@ -196,7 +299,7 @@ dealer <- function(dealer_total, cards_remaining, is_ace, hit_soft_17 = TRUE, is
     cards_remaining_tmp[1] <- 0
   }
 
-  next_card_probs <- cards_remaining_tmp / sum(cards_remaining_tmp)
+  next_card_probs <- nextCardProbs(cards_remaining = cards_remaining_tmp)
 
   max_without_bust <- 21 - dealer_total
   #if(max_without_bust < 10) {

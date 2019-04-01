@@ -48,7 +48,7 @@ test_that("test.stand", {
   cards_remaining <- rep(0, 10)
   cards_remaining[c(5, 6, 10)] <- 1
   p_stand <- stand(player_total = 15,
-                   dealer_total = 10,
+                   dealer_card = 10,
                    cards_remaining = cards_remaining)
   expect_equal(p_stand, 1/3)
 
@@ -57,7 +57,7 @@ test_that("test.stand", {
   cards_remaining <- rep(0, 10)
   cards_remaining[c(5, 6, 10)] <- 1
   p_stand <- stand(player_total = 21,
-                   dealer_total = 10,
+                   dealer_card = 10,
                    cards_remaining = cards_remaining)
   expect_equal(p_stand, 1 - 1/6)
 
@@ -74,7 +74,7 @@ test_that("test.hit", {
   cards_remaining <- rep(0, 10)
   cards_remaining[c(5, 6, 10)] <- 1
   p_hit <- hit(player_total = 15,
-               dealer_total = 10,
+               dealer_card = 10,
                cards_remaining = cards_remaining,
                is_ace = FALSE)
   expect_equal(p_hit, 1/2 + 1/12)
@@ -107,7 +107,7 @@ test_that("test.soft_hands", {
   cards_remaining[c(5, 6)] <- 1
   cards_remaining[10] <- 2
   p_hit <- hit(player_total = 5,
-               dealer_total = 8,
+               dealer_card = 8,
                cards_remaining = cards_remaining,
                is_ace = TRUE)
   expect_equal(p_hit, 1 - 1/6)
@@ -117,7 +117,7 @@ test_that("test.soft_hands", {
   cards_remaining[9] <- 1
   cards_remaining[10] <- 6
   p_hit <- hit(player_total = 12,
-               dealer_total = 1,
+               dealer_card = 1,
                cards_remaining = cards_remaining,
                is_ace = FALSE)
   expect_equal(p_hit, 0)
@@ -127,13 +127,106 @@ test_that("test.soft_hands", {
   cards_remaining[9] <- 2
   cards_remaining[10] <- 6
   p_hit <- hit(player_total = 12,
-               dealer_total = 1,
+               dealer_card = 1,
                cards_remaining = cards_remaining,
                is_ace = FALSE)
-  expect_equal(p_hit, 0)
+  expect_equal(p_hit, 1/7)
 
 })
 
 
+
+
+test_that("test.split", {
+
+  cards_remaining <- rep(0, 10)
+  cards_remaining[10] <- 6
+
+  s <- split(p = 1,
+             cards_remaining = cards_remaining,
+             dealer_card = 5)
+  expect_equal(s, 2)
+
+})
+
+
+
+test_that("test.doubleDown", {
+
+  # make sure expected profit can be 2
+  cards_remaining <- rep(0, 10)
+  cards_remaining[8] <- 6
+
+  s <- doubleDown(player_total = 12,
+                  cards_remaining = cards_remaining,
+                  dealer_card = 6,
+                  is_ace = FALSE)
+  expect_equal(s, 2)
+
+  # make sure expected profit can be -2
+  cards_remaining <- rep(0, 10)
+  cards_remaining[4] <- 6
+
+  s <- doubleDown(player_total = 12,
+                  cards_remaining = cards_remaining,
+                  dealer_card = 6,
+                  is_ace = FALSE)
+  expect_equal(s, -2)
+
+  # one with a soft hand (3/5 probability of 21)
+  # and 2/5 probability we go to a 3/4 chance of winning (win if dealer doesn't get the 10)
+  cards_remaining <- rep(0, 10)
+  cards_remaining[2] <- 3
+  cards_remaining[10] <- 2
+
+  s <- doubleDown(player_total = 9,
+                  cards_remaining = cards_remaining,
+                  dealer_card = 10,
+                  is_ace = TRUE)
+  expect_equal(s, 2*(3/5 + 2/5*3/4 - 2/5*1/4))
+
+
+  # make sure it's twice the return from hit when you for sure don't hit twice
+  cards_remaining <- rep(0, 10)
+  cards_remaining[6] <- 6
+  cards_remaining[7] <- 3
+
+  s <- doubleDown(player_total = 12,
+                  cards_remaining = cards_remaining,
+                  dealer_card = 9,
+                  is_ace = FALSE)
+  h <- hit(player_total = 12,
+           cards_remaining = cards_remaining,
+           dealer_card = 9,
+           is_ace = FALSE)
+  expect_equal(s, 2*(h - (1-h)))
+
+})
+
+
+
+test_that("test.nextCardProbs", {
+
+  cards_remaining <- rep(0, 10)
+  cards_remaining[9] <- 1
+  cards_remaining[10] <- 6
+
+  p <- nextCardProbs(cards_remaining = cards_remaining,
+                     dealer_card = 1)
+  expect_equal(p[10], 1)
+
+  p <- nextCardProbs(cards_remaining = cards_remaining,
+                     dealer_card = 5)
+  expect_equal(p[10], 6/7)
+
+  cards_remaining <- rep(0, 10)
+  cards_remaining[9] <- 1
+  cards_remaining[1] <- 6
+  p <- nextCardProbs(cards_remaining = cards_remaining,
+                     dealer_card = 10)
+  expect_equal(p[1], 1)
+
+
+})
 
 
