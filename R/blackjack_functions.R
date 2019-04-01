@@ -10,28 +10,29 @@
 #' @param cards_gone will be modified to include p1, p2, d. But could also
 #' pass initial vector here for card counting purposes
 #' @param n_decks default to 6
+#' @param blackjack_payout defaults to 6/5 (as at New York New York, where I played)
 #' @return data frame with p_win_if_stand, p_win_if_hit, player_card_1,
 #' player_card_2, dealer_card
 #' @export
-hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 6) {
+hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 6,
+                          blackjack_payout = 6/5) {
 
   cards_gone <- c(cards_gone, p1, p2, d)
   cards_remaining <- findRemainingCards(cards_gone, n_decks)
 
-  p_win_if_stand <- stand(player_total = p1 + p2,
+  stand_roi <- stand(player_total = p1 + p2,
                           dealer_card = d,
                           cards_remaining = cards_remaining)
-  stand_roi <- p_win_if_stand - (1 - p_win_if_stand)
 
-  p_win_if_hit <- hit(player_total = p1 + p2,
+  hit_roi <- hit(player_total = p1 + p2,
                       dealer_card = d,
                       cards_remaining = cards_remaining)
-  hit_roi <- p_win_if_hit - (1 - p_win_if_hit)
 
   split_roi <- ifelse(p1 == p2,
                       split(p = p1,
                             cards_remaining = cards_remaining,
-                            dealer_card = d),
+                            dealer_card = d,
+                            blackjack_payout = blackjack_payout),
                       NA)
 
   double_down_roi <- doubleDown(player_total = p1 + p2,
@@ -60,35 +61,46 @@ hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 6) {
 #' @param dealer_card dealer card
 #' @return expected winnings of the split
 #' @export
-split <- function(p, cards_remaining, dealer_card) {
+split <- function(p, cards_remaining, dealer_card, blackjack_payout) {
+
+
+  # deal with multiple splits - start by assuming we do want to split again
+  # use blackjack payout
 
   next_card_probs <- nextCardProbs(cards_remaining = cards_remaining,
                                    dealer_card = dealer_card)
+  poss_cards <- which(next_card_probs > 0)
 
-  prob_same_card <- next_card_probs[p]
+  r <- 0
+  for(i in poss_cards) {
 
-  cards_remaining_tmp <- cards_remaining
-  cards_remaining_tmp[p] <- max(0, cards_remaining_tmp[p] - 1)
+    cards_remaining_tmp <- cards_remaining
+    cards_remaining_tmp[i] <- max(0, cards_remaining_tmp[i] - 1)
+
+    if(i == p) {
+      r <- r + next_card_probs[i] * split(p = p,
+                                          dealer_card = dealer_card,
+                                          cards_remaining = cards_remaining_tmp,
+                                          blackjack_payout = blackjack_payout)
+    } else {
+
+      is_ace = p == 1 | i == 1
+      r_if_not_split_again <-
+        max(hit(player_total = p + i,
+                dealer_card = dealer_card,
+                cards_remaining = cards_remaining_tmp,
+                is_ace = is_ace),
+            stand(player_total = p + i + 10 * is_ace,
+                  dealer_card = dealer_card,
+                  cards_remaining = cards_remaining_tmp,
+                  payout_for_21 = blackjack_payout))
+
+      r <- r + next_card_probs[i] * 2 * r_if_not_split_again
+
+    }
 
 
-  p_win_hand_if_split <- hit(player_total = p,
-                             dealer_card = dealer_card,
-                             cards_remaining = cards_remaining,
-                             is_ace = p == 1)
-
-  p_win_hand_if_not_split <- hit(player_total = 2 * p,
-                                 dealer_card = dealer_card,
-                                 cards_remaining = cards_remaining,
-                                 is_ace = p == 1)
-
-  r <- p_same_card * split(p = p,
-                           cards_remaining = cards_remaining_tmp,
-                           dealer_card = dealer_card) +
-    (1 - p_same_card) * (p_win_hand - (1 - p_win_hand))
-
-  # law of total expectation implies second hand has same win prob as first
-  r <- 2 * r
-
+  }
 
   return(r)
 
@@ -121,23 +133,23 @@ doubleDown <- function(player_total, cards_remaining, dealer_card, is_ace) {
     cards_remaining_tmp[i] <- cards_remaining_tmp[i] - 1
 
     if(player_total + i <= 21) {
-      p_win_hand <- stand(player_total = player_total + i,
+      r_hand <- stand(player_total = player_total + i,
                           dealer_card = dealer_card,
                           cards_remaining = cards_remaining_tmp)
     } else {
-      p_win_hand <- 0
+      r_hand <- 0
     }
 
 
     if(is_ace & (player_total + 10 + i <= 21)) {
-      p_win_soft_hand <- stand(player_total = player_total + 10 + i,
+      r_soft_hand <- stand(player_total = player_total + 10 + i,
                                dealer_card = dealer_card,
                           cards_remaining = cards_remaining_tmp)
 
-      p_win_hand <- max(p_win_hand, p_win_soft_hand)
+      r_hand <- max(r_hand, r_soft_hand)
     }
 
-    r <- r + next_card_probs[i] * (p_win_hand - (1 - p_win_hand))
+    r <- r + next_card_probs[i] * r_hand
 
   }
 
@@ -194,7 +206,7 @@ nextCardProbs <- function(cards_remaining, dealer_card = NA) {
 #' @param dealer_card what dealer card is showing
 #' @param cards_remaining vector of counts for each of 1 through 10
 #' @param is_ace boolean indicating whether one of player cards is an ace
-#' @return a player win probability
+#' @return expected return for player
 #' @export
 hit <- function(player_total, dealer_card, cards_remaining, is_ace) {
 
@@ -249,9 +261,10 @@ hit <- function(player_total, dealer_card, cards_remaining, is_ace) {
 #' @param player_total sum of player cards so far in the hand
 #' @param dealer_card what dealer card is showing
 #' @param cards_remaining vector of counts for each of 1 through 10
-#' @return a player win probability
+#' @param payout_for_21
+#' @return expected return for player
 #' @export
-stand <- function(player_total, dealer_card, cards_remaining) {
+stand <- function(player_total, dealer_card, cards_remaining, payout_for_21 = 1) {
 
   dealer_pmf <- dealer(dealer_total = dealer_card,
                        cards_remaining = cards_remaining,
@@ -262,10 +275,14 @@ stand <- function(player_total, dealer_card, cards_remaining) {
                   dealer_pmf[as.character(player_total)],
                   0)
 
-  p_player_wins <- (sum(dealer_pmf[as.numeric(names(dealer_pmf)) < player_total]) +
-                      dealer_pmf["22"]) + 0.5 * p_tie
+  p_lose <- sum(dealer_pmf[as.numeric(names(dealer_pmf)) > player_total &
+                             names(dealer_pmf) != "22"])
 
-  return(as.numeric(p_player_wins))
+  p_win <- 1 - (p_tie + p_lose)
+
+  r <- p_win * (1 + (player_total == 21) * (payout_for_21 - 1)) - p_lose
+
+  return(as.numeric(r))
 
 }
 

@@ -4,8 +4,8 @@ context("exact_probabilities")
 
 test_that("test.remaining_cards", {
 
-  x <- findRemainingCards(c(1,2,3), n_decks = 1)
-  expect_equal(x, c(3,3,3,4,4,4,4,4,4,16))
+  x <- findRemainingCards(c(1, 2, 3), n_decks = 1)
+  expect_equal(x, c(3, 3, 3, 4, 4, 4, 4, 4, 4, 16))
 
 })
 
@@ -47,19 +47,19 @@ test_that("test.stand", {
 
   cards_remaining <- rep(0, 10)
   cards_remaining[c(5, 6, 10)] <- 1
-  p_stand <- stand(player_total = 15,
+  r_stand <- stand(player_total = 15,
                    dealer_card = 10,
                    cards_remaining = cards_remaining)
-  expect_equal(p_stand, 1/3)
+  expect_equal(r_stand, -1/3)
 
 
   # 1/3 chance of tying at 21
   cards_remaining <- rep(0, 10)
   cards_remaining[c(5, 6, 10)] <- 1
-  p_stand <- stand(player_total = 21,
+  r_stand <- stand(player_total = 21,
                    dealer_card = 10,
                    cards_remaining = cards_remaining)
-  expect_equal(p_stand, 1 - 1/6)
+  expect_equal(r_stand, 5/6 - (1 - 5/6))
 
 
 })
@@ -67,17 +67,17 @@ test_that("test.stand", {
 
 test_that("test.hit", {
 
-  # 1/3 win with 21 (dealer can't get exactly 21),
+  # 1/3 win with 21 (dealer can't get exactly 21 unless player busts),
   # 1/3 bust, 1/6 tie at 20, 1/6 win with 20 by dealer bust
   # => 1/2 win, 1/3 lose, 1/6 tie
   # => 1/2 + 1/12 win, 1/3 + 1/12 lose
   cards_remaining <- rep(0, 10)
   cards_remaining[c(5, 6, 10)] <- 1
-  p_hit <- hit(player_total = 15,
+  r_hit <- hit(player_total = 15,
                dealer_card = 10,
                cards_remaining = cards_remaining,
                is_ace = FALSE)
-  expect_equal(p_hit, 1/2 + 1/12)
+  expect_equal(r_hit, 7/12 - (1 - 7/12))
 
 })
 
@@ -106,31 +106,31 @@ test_that("test.soft_hands", {
   cards_remaining <- rep(0, 10)
   cards_remaining[c(5, 6)] <- 1
   cards_remaining[10] <- 2
-  p_hit <- hit(player_total = 5,
+  r_hit <- hit(player_total = 5,
                dealer_card = 8,
                cards_remaining = cards_remaining,
                is_ace = TRUE)
-  expect_equal(p_hit, 1 - 1/6)
+  expect_equal(r_hit, 5/6 - (1 - 5/6))
 
   # dealer must have the 9
   cards_remaining <- rep(0, 10)
   cards_remaining[9] <- 1
   cards_remaining[10] <- 6
-  p_hit <- hit(player_total = 12,
+  r_hit <- hit(player_total = 12,
                dealer_card = 1,
                cards_remaining = cards_remaining,
                is_ace = FALSE)
-  expect_equal(p_hit, 0)
+  expect_equal(r_hit, -1)
 
   # dealer must have the 9. player has 1/7 chance of getting 21
   cards_remaining <- rep(0, 10)
   cards_remaining[9] <- 2
   cards_remaining[10] <- 6
-  p_hit <- hit(player_total = 12,
+  r_hit <- hit(player_total = 12,
                dealer_card = 1,
                cards_remaining = cards_remaining,
                is_ace = FALSE)
-  expect_equal(p_hit, 1/7)
+  expect_equal(r_hit, 1/7 - (1 - 1/7))
 
 })
 
@@ -144,8 +144,9 @@ test_that("test.split", {
 
   s <- split(p = 1,
              cards_remaining = cards_remaining,
-             dealer_card = 5)
-  expect_equal(s, 2)
+             dealer_card = 5,
+             blackjack_payout = 6/5)
+  expect_equal(s, 2*6/5)
 
 })
 
