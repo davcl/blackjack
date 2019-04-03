@@ -148,6 +148,30 @@ test_that("test.split", {
              blackjack_payout = 6/5)
   expect_equal(s, 2*6/5)
 
+
+  cards_remaining <- rep(0, 10)
+  cards_remaining[1] <- 1
+  cards_remaining[10] <- 6
+
+  s <- split(p = 1,
+             cards_remaining = cards_remaining,
+             dealer_card = 5,
+             blackjack_payout = 6/5)
+  expect_equal(s, 1/7*3*6/5 + 6/7*(1/6*3*6/5 + 5/6*2*6/5))
+
+
+  cards_remaining <- rep(0, 10)
+  cards_remaining[9] <- 6
+  cards_remaining[5] <- 3
+
+  s <- split(p = 10,
+             cards_remaining = cards_remaining,
+             dealer_card = 4,
+             blackjack_payout = 100)
+  expect_equal(s, 1/12*(18/42)*2 + 5/12*2*(1 - 3/7*2/6*1/5) + 1/2*(1 + 10/21 + 2/42 - 5/21 - 10/42))
+
+
+
 })
 
 
@@ -200,7 +224,7 @@ test_that("test.doubleDown", {
            cards_remaining = cards_remaining,
            dealer_card = 9,
            is_ace = FALSE)
-  expect_equal(s, 2*(h - (1-h)))
+  expect_equal(s, 2 * h)
 
 })
 

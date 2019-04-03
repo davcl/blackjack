@@ -59,13 +59,17 @@ hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 6,
 #' @param p the value of the card being split
 #' @param cards_remaining vector with number of each type of card remaining
 #' @param dealer_card dealer card
+#' @param blackjack_payout this is the one place in hit/stand/split/double down
+#' decision process (without card counting) where blackjack odds are needed
+#' @param n_hands I think this function can be written faster without this argument
+#' but as a first pass I found it clearer this way
 #' @return expected winnings of the split
 #' @export
-split <- function(p, cards_remaining, dealer_card, blackjack_payout) {
+split <- function(p, cards_remaining, dealer_card, blackjack_payout, n_hands = 2) {
 
 
-  # deal with multiple splits - start by assuming we do want to split again
-  # use blackjack payout
+  # start by assuming we do want to split again but that should be improved
+
 
   next_card_probs <- nextCardProbs(cards_remaining = cards_remaining,
                                    dealer_card = dealer_card)
@@ -78,14 +82,30 @@ split <- function(p, cards_remaining, dealer_card, blackjack_payout) {
     cards_remaining_tmp[i] <- max(0, cards_remaining_tmp[i] - 1)
 
     if(i == p) {
-      r <- r + next_card_probs[i] * split(p = p,
-                                          dealer_card = dealer_card,
-                                          cards_remaining = cards_remaining_tmp,
-                                          blackjack_payout = blackjack_payout)
+
+      hand1 <- split(p = p,
+                     dealer_card = dealer_card,
+                     cards_remaining = cards_remaining_tmp,
+                     blackjack_payout = blackjack_payout)
+
+      if(n_hands == 2) {
+        hand2 <- split(p = p,
+                       dealer_card = dealer_card,
+                       cards_remaining = cards_remaining_tmp,
+                       blackjack_payout = blackjack_payout,
+                       n_hands = 1)
+      } else {
+        hand2 <- 0
+      }
+
+
+
+      r <- r + next_card_probs[i] * (hand1 + hand2)
+
     } else {
 
       is_ace = p == 1 | i == 1
-      r_if_not_split_again <-
+      hand1 <-
         max(hit(player_total = p + i,
                 dealer_card = dealer_card,
                 cards_remaining = cards_remaining_tmp,
@@ -95,7 +115,18 @@ split <- function(p, cards_remaining, dealer_card, blackjack_payout) {
                   cards_remaining = cards_remaining_tmp,
                   payout_for_21 = blackjack_payout))
 
-      r <- r + next_card_probs[i] * 2 * r_if_not_split_again
+      if(n_hands == 2) {
+        hand2 <- split(p = p,
+                       dealer_card = dealer_card,
+                       cards_remaining = cards_remaining_tmp,
+                       blackjack_payout = blackjack_payout,
+                       n_hands = 1)
+      } else {
+        hand2 <- 0
+      }
+
+
+      r <- r + next_card_probs[i] * (hand1 + hand2)
 
     }
 
@@ -132,13 +163,9 @@ doubleDown <- function(player_total, cards_remaining, dealer_card, is_ace) {
     cards_remaining_tmp <- cards_remaining
     cards_remaining_tmp[i] <- cards_remaining_tmp[i] - 1
 
-    if(player_total + i <= 21) {
-      r_hand <- stand(player_total = player_total + i,
-                          dealer_card = dealer_card,
-                          cards_remaining = cards_remaining_tmp)
-    } else {
-      r_hand <- 0
-    }
+    r_hand <- stand(player_total = player_total + i,
+                    dealer_card = dealer_card,
+                    cards_remaining = cards_remaining_tmp)
 
 
     if(is_ace & (player_total + 10 + i <= 21)) {
@@ -219,6 +246,7 @@ hit <- function(player_total, dealer_card, cards_remaining, is_ace) {
   to_return <- 0
   if(max_without_bust > 0) {
 
+    # possible cards that don't bust the player
     poss_cards <- intersect(1:min(max_without_bust, 10),
                             which(next_card_probs > 0))
 
@@ -242,6 +270,9 @@ hit <- function(player_total, dealer_card, cards_remaining, is_ace) {
                                        cards_remaining = cards_remaining_tmp))
 
     }
+
+    p_bust <- 1 - sum(next_card_probs[poss_cards])
+    to_return <- to_return - p_bust
 
 
   } else {
