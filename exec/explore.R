@@ -55,3 +55,16 @@ ggplot(dd, aes(x = x, y = y, colour = result), main = "probs") +
   theme(plot.title = element_text(hjust = 0.5)) +
   scale_x_continuous(name = "player total", breaks = 12:20) +
   scale_y_continuous(name = "dealer card", breaks = 1:10)
+
+
+
+
+
+
+library(profvis)
+profvis({
+  hit_stand_choice <- hitStandProbs(p1 = 7,
+                                    p2 = 6,
+                                    d = 4,
+                                    n_decks = 6)
+})

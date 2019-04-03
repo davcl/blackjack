@@ -25,8 +25,9 @@ hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 6,
                           cards_remaining = cards_remaining)
 
   hit_roi <- hit(player_total = p1 + p2,
-                      dealer_card = d,
-                      cards_remaining = cards_remaining)
+                 dealer_card = d,
+                 cards_remaining = cards_remaining,
+                 is_ace = any(c(p1, p2) == 2))
 
   split_roi <- ifelse(p1 == p2,
                       split(p = p1,
@@ -348,11 +349,6 @@ dealer <- function(dealer_total, cards_remaining, is_ace, hit_soft_17 = TRUE, is
   next_card_probs <- nextCardProbs(cards_remaining = cards_remaining_tmp)
 
   max_without_bust <- 21 - dealer_total
-  #if(max_without_bust < 10) {
-  #  p_bust <- sum(next_card_probs[(max_without_bust + 1):10])
-  #} else {
-  #  p_bust <- 0
-  #}
 
   possible_dealer_results <- rep(0, 6)
   names(possible_dealer_results) <- 17:22
