@@ -4,17 +4,21 @@
 \alias{stand}
 \title{stand}
 \usage{
-stand(player_total, dealer_total, cards_remaining)
+stand(player_total, dealer_card, cards_remaining, payout_for_21 = 1)
 }
 \arguments{
 \item{player_total}{sum of player cards so far in the hand}
 
-\item{dealer_total}{what dealer card is showing}
+\item{dealer_card}{what dealer card is showing}
 
 \item{cards_remaining}{vector of counts for each of 1 through 10}
+
+\item{payout_for_21}{defaults to 1 because 21 can't be blackjack usually
+(only for splits, at least when we are considering hand only after player
+see their first two cards)}
 }
 \value{
-a player win probability
+expected return for player
 }
 \description{
 function to find player win probability if they stand

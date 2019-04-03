@@ -292,7 +292,9 @@ hit <- function(player_total, dealer_card, cards_remaining, is_ace) {
 #' @param player_total sum of player cards so far in the hand
 #' @param dealer_card what dealer card is showing
 #' @param cards_remaining vector of counts for each of 1 through 10
-#' @param payout_for_21
+#' @param payout_for_21 defaults to 1 because 21 can't be blackjack usually
+#' (only for splits, at least when we are considering hand only after player
+#' see their first two cards)
 #' @return expected return for player
 #' @export
 stand <- function(player_total, dealer_card, cards_remaining, payout_for_21 = 1) {

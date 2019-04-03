@@ -9,6 +9,7 @@ test_that("test.remaining_cards", {
 
 })
 
+
 test_that("test.dealer", {
 
   # test that the two dealer possibilities are both correct
@@ -94,12 +95,14 @@ test_that("test.soft_hands", {
   expect_equal(as.numeric(dealer_pmf["17"]), 0.5)
   expect_equal(as.numeric(dealer_pmf["22"]), 0.5)
 
+
   cards_remaining <- rep(0, 10)
   cards_remaining[c(7, 10)] <- 1
   dealer_pmf <- dealer(dealer_total = 8,
                        cards_remaining = cards_remaining,
                        is_ace = TRUE)
   expect_equal(as.numeric(dealer_pmf["18"]), 1)
+
 
   # hit
   # will win as long as player doesn't get both tens
@@ -111,6 +114,7 @@ test_that("test.soft_hands", {
                cards_remaining = cards_remaining,
                is_ace = TRUE)
   expect_equal(r_hit, 5/6 - (1 - 5/6))
+
 
   # dealer must have the 9
   cards_remaining <- rep(0, 10)
@@ -141,7 +145,6 @@ test_that("test.split", {
 
   cards_remaining <- rep(0, 10)
   cards_remaining[10] <- 6
-
   s <- split(p = 1,
              cards_remaining = cards_remaining,
              dealer_card = 5,
@@ -152,7 +155,6 @@ test_that("test.split", {
   cards_remaining <- rep(0, 10)
   cards_remaining[1] <- 1
   cards_remaining[10] <- 6
-
   s <- split(p = 1,
              cards_remaining = cards_remaining,
              dealer_card = 5,
@@ -163,14 +165,11 @@ test_that("test.split", {
   cards_remaining <- rep(0, 10)
   cards_remaining[9] <- 6
   cards_remaining[5] <- 3
-
   s <- split(p = 10,
              cards_remaining = cards_remaining,
              dealer_card = 4,
              blackjack_payout = 100)
   expect_equal(s, 1/12*(18/42)*2 + 5/12*2*(1 - 3/7*2/6*1/5) + 1/2*(1 + 10/21 + 2/42 - 5/21 - 10/42))
-
-
 
 })
 
@@ -181,29 +180,28 @@ test_that("test.doubleDown", {
   # make sure expected profit can be 2
   cards_remaining <- rep(0, 10)
   cards_remaining[8] <- 6
-
   s <- doubleDown(player_total = 12,
                   cards_remaining = cards_remaining,
                   dealer_card = 6,
                   is_ace = FALSE)
   expect_equal(s, 2)
 
+
   # make sure expected profit can be -2
   cards_remaining <- rep(0, 10)
   cards_remaining[4] <- 6
-
   s <- doubleDown(player_total = 12,
                   cards_remaining = cards_remaining,
                   dealer_card = 6,
                   is_ace = FALSE)
   expect_equal(s, -2)
 
+
   # one with a soft hand (3/5 probability of 21)
   # and 2/5 probability we go to a 3/4 chance of winning (win if dealer doesn't get the 10)
   cards_remaining <- rep(0, 10)
   cards_remaining[2] <- 3
   cards_remaining[10] <- 2
-
   s <- doubleDown(player_total = 9,
                   cards_remaining = cards_remaining,
                   dealer_card = 10,
@@ -215,7 +213,6 @@ test_that("test.doubleDown", {
   cards_remaining <- rep(0, 10)
   cards_remaining[6] <- 6
   cards_remaining[7] <- 3
-
   s <- doubleDown(player_total = 12,
                   cards_remaining = cards_remaining,
                   dealer_card = 9,

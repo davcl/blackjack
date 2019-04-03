@@ -4,12 +4,17 @@
 \alias{dealer}
 \title{dealer}
 \usage{
-dealer(dealer_total, cards_remaining, is_first = FALSE)
+dealer(dealer_total, cards_remaining, is_ace, hit_soft_17 = TRUE,
+  is_first = FALSE)
 }
 \arguments{
 \item{dealer_total}{what the dealer total is so far}
 
 \item{cards_remaining}{vector of counts for each of 1 through 10}
+
+\item{is_ace}{boolean indicating if one of dealer cards is an ace}
+
+\item{hit_soft_17}{defaults to \code{TRUE}}
 
 \item{is_first}{if dealer is showing only one card so far, we can be sure
 it's not a blackjack because that would have been revealed}

@@ -4,7 +4,8 @@
 \alias{hitStandProbs}
 \title{hitStandProbs}
 \usage{
-hitStandProbs(p1, p2, d, cards_gone = c(), n_decks = 1)
+hitStandProbs(p1, p2, d, cards_gone = c(), n_decks = 6,
+  blackjack_payout = 6/5)
 }
 \arguments{
 \item{p1}{first player card (order with p2 doesn't matter)}
@@ -14,9 +15,11 @@ hitStandProbs(p1, p2, d, cards_gone = c(), n_decks = 1)
 \item{d}{dealer card}
 
 \item{cards_gone}{will be modified to include p1, p2, d. But could also
-pass initial vector here too for card counting purposes}
+pass initial vector here for card counting purposes}
 
-\item{n_decks}{default to 1 while I test (for efficiency purposes)}
+\item{n_decks}{default to 6}
+
+\item{blackjack_payout}{defaults to 6/5 (as at New York New York, where I played)}
 }
 \value{
 data frame with p_win_if_stand, p_win_if_hit, player_card_1,
@@ -24,7 +27,7 @@ player_card_2, dealer_card
 }
 \description{
 compares the hand win probability for hit and stand given the
-player and dealer starting cards -- test commit does this work
+player and dealer starting cards
 }
 \author{
 David Clement

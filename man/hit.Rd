@@ -4,17 +4,19 @@
 \alias{hit}
 \title{hit}
 \usage{
-hit(player_total, dealer_total, cards_remaining)
+hit(player_total, dealer_card, cards_remaining, is_ace)
 }
 \arguments{
 \item{player_total}{sum of player cards so far in the hand}
 
-\item{dealer_total}{what dealer card is showing}
+\item{dealer_card}{what dealer card is showing}
 
 \item{cards_remaining}{vector of counts for each of 1 through 10}
+
+\item{is_ace}{boolean indicating whether one of player cards is an ace}
 }
 \value{
-a player win probability
+expected return for player
 }
 \description{
 recursive function to find player win probability when they hit
