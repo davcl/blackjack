@@ -17,7 +17,9 @@ split(p, cards_remaining, dealer_card, blackjack_payout, n_hands = 2)
 decision process (without card counting) where blackjack odds are needed}
 
 \item{n_hands}{I think this function can be written faster without this argument
-but as a first pass I found it clearer this way}
+but as a first pass I found it clearer this way. note also I am allowing for a
+situation where you split once but then don't want to split again - I would
+theorize this would never actually happen. You wouldn't split the first time.}
 }
 \value{
 expected winnings of the split

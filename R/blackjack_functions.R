@@ -14,7 +14,7 @@
 #' @return data frame with p_win_if_stand, p_win_if_hit, player_card_1,
 #' player_card_2, dealer_card
 #' @export
-hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 6,
+hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 1,
                           blackjack_payout = 6/5) {
 
   cards_gone <- c(cards_gone, p1, p2, d)
@@ -63,14 +63,12 @@ hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 6,
 #' @param blackjack_payout this is the one place in hit/stand/split/double down
 #' decision process (without card counting) where blackjack odds are needed
 #' @param n_hands I think this function can be written faster without this argument
-#' but as a first pass I found it clearer this way
+#' but as a first pass I found it clearer this way. note also I am allowing for a
+#' situation where you split once but then don't want to split again - I would
+#' theorize this would never actually happen. You wouldn't split the first time.
 #' @return expected winnings of the split
 #' @export
 split <- function(p, cards_remaining, dealer_card, blackjack_payout, n_hands = 2) {
-
-
-  # start by assuming we do want to split again but that should be improved
-
 
   next_card_probs <- nextCardProbs(cards_remaining = cards_remaining,
                                    dealer_card = dealer_card)
@@ -79,57 +77,52 @@ split <- function(p, cards_remaining, dealer_card, blackjack_payout, n_hands = 2
   r <- 0
   for(i in poss_cards) {
 
+    # remove this card from the deck but only in this iteration of for loop
     cards_remaining_tmp <- cards_remaining
     cards_remaining_tmp[i] <- max(0, cards_remaining_tmp[i] - 1)
+    is_ace = p == 1 | i == 1
 
+    # if i == p, you can split again
     if(i == p) {
 
-      hand1 <- split(p = p,
-                     dealer_card = dealer_card,
-                     cards_remaining = cards_remaining_tmp,
-                     blackjack_payout = blackjack_payout)
-
-      if(n_hands == 2) {
-        hand2 <- split(p = p,
+      # but take the max in case you don't want to split again
+      hand1 <- max(split(p = p,
+                         dealer_card = dealer_card,
+                         cards_remaining = cards_remaining_tmp,
+                         blackjack_payout = blackjack_payout),
+                   hit(player_total = 2 * p,
                        dealer_card = dealer_card,
                        cards_remaining = cards_remaining_tmp,
-                       blackjack_payout = blackjack_payout,
-                       n_hands = 1)
-      } else {
-        hand2 <- 0
-      }
+                       is_ace = is_ace),
+                   stand(player_total = 2 * p + 10 * is_ace,
+                         dealer_card = dealer_card,
+                         cards_remaining = cards_remaining_tmp))
 
-
-
-      r <- r + next_card_probs[i] * (hand1 + hand2)
 
     } else {
 
-      is_ace = p == 1 | i == 1
-      hand1 <-
-        max(hit(player_total = p + i,
-                dealer_card = dealer_card,
-                cards_remaining = cards_remaining_tmp,
-                is_ace = is_ace),
-            stand(player_total = p + i + 10 * is_ace,
-                  dealer_card = dealer_card,
-                  cards_remaining = cards_remaining_tmp,
-                  payout_for_21 = blackjack_payout))
-
-      if(n_hands == 2) {
-        hand2 <- split(p = p,
+      hand1 <- max(hit(player_total = p + i,
                        dealer_card = dealer_card,
                        cards_remaining = cards_remaining_tmp,
-                       blackjack_payout = blackjack_payout,
-                       n_hands = 1)
-      } else {
-        hand2 <- 0
-      }
-
-
-      r <- r + next_card_probs[i] * (hand1 + hand2)
+                       is_ace = is_ace),
+                   stand(player_total = p + i + 10 * is_ace,
+                         dealer_card = dealer_card,
+                         cards_remaining = cards_remaining_tmp,
+                         payout_for_21 = blackjack_payout))
 
     }
+
+    # if there was a second hand still in play (that hadn't received its 2nd card)
+    # then call the split function on it regardless of whether "hand1" was able to split
+    hand2 <- ifelse(n_hands == 2,
+                    split(p = p,
+                          dealer_card = dealer_card,
+                          cards_remaining = cards_remaining_tmp,
+                          blackjack_payout = blackjack_payout,
+                          n_hands = 1),
+                    0)
+
+    r <- r + next_card_probs[i] * (hand1 + hand2)
 
 
   }
@@ -154,11 +147,9 @@ doubleDown <- function(player_total, cards_remaining, dealer_card, is_ace) {
 
   next_card_probs <- nextCardProbs(cards_remaining = cards_remaining,
                                    dealer_card = dealer_card)
-
   poss_cards <- which(next_card_probs > 0)
 
   r <- 0
-  # i is hand 1 and j is hand 2
   for(i in poss_cards) {
 
     cards_remaining_tmp <- cards_remaining
@@ -244,7 +235,7 @@ hit <- function(player_total, dealer_card, cards_remaining, is_ace) {
   # player total must be at least 12; otherwise we'd hit for sure
   max_without_bust <- 21 - player_total
 
-  to_return <- 0
+  r <- 0
   if(max_without_bust > 0) {
 
     # possible cards that don't bust the player
@@ -258,33 +249,34 @@ hit <- function(player_total, dealer_card, cards_remaining, is_ace) {
       is_ace_now <- is_ace | (i == 1)
 
 
-      to_return <- to_return +
-        next_card_probs[i] * max(hit(player_total = player_total + i,
-                                     dealer_card = dealer_card,
-                                     cards_remaining = cards_remaining_tmp,
-                                     is_ace = is_ace_now),
-                                 stand(player_total = ifelse(player_total + i <= 11 &
-                                                               is_ace_now,
-                                                             player_total + i + 10,
-                                                             player_total + i),
-                                       dealer_card = dealer_card,
-                                       cards_remaining = cards_remaining_tmp))
+      r <- r + next_card_probs[i] * max(hit(player_total = player_total + i,
+                                            dealer_card = dealer_card,
+                                            cards_remaining = cards_remaining_tmp,
+                                            is_ace = is_ace_now),
+                                        stand(player_total = ifelse(player_total + i <= 11 &
+                                                                      is_ace_now,
+                                                                    player_total + i + 10,
+                                                                    player_total + i),
+                                              dealer_card = dealer_card,
+                                              cards_remaining = cards_remaining_tmp))
+
 
     }
 
     p_bust <- 1 - sum(next_card_probs[poss_cards])
-    to_return <- to_return - p_bust
+    r <- r - p_bust
 
 
   } else {
 
-    to_return <- stand(player_total = 21,
-                       dealer_card = dealer_card,
-                       cards_remaining = cards_remaining)
+    r <- stand(player_total = 21,
+               dealer_card = dealer_card,
+               cards_remaining = cards_remaining)
   }
 
-  return(to_return)
+  return(r)
 }
+
 
 
 #' @title stand

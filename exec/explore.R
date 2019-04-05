@@ -3,6 +3,32 @@
 
 library(blackjack)
 
+for(i in 1:100) {
+
+  p <- sample(c(8,8), size=1)
+  y <- c(sample(1:10, size = 8, replace=T),
+                       rep(p, sample(1:2, size = 1)))
+  cards_remaining <- rep(0, 10)
+  tmp <- sort(table(y))
+  cards_remaining[as.numeric(names(tmp))] <- tmp
+
+
+  d <- sample(1:10, size=1)
+  x <- split(p = p,
+        cards_remaining = cards_remaining,
+        dealer_card = d,
+        blackjack_payout = 6/5)
+  print(paste(x, i, p, d, cards_remaining))
+
+
+}
+
+
+
+
+
+
+
 # create data frame with possible player cards and dealer cards
 df <- expand.grid(p1 = 1:10,
                   p2 = 1:10,

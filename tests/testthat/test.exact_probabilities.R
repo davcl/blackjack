@@ -161,6 +161,20 @@ test_that("test.split", {
              blackjack_payout = 6/5)
   expect_equal(s, 1/7*3*6/5 + 6/7*(1/6*3*6/5 + 5/6*2*6/5))
 
+  # a chance to split 3 times, i.e. have 4 hands going
+  cards_remaining <- rep(0, 10)
+  cards_remaining[1] <- 2
+  # note making this 6 gave NaN because you get down to a situation with 10 + 1
+  # and two 10s left in the deck. so obv you stand, but model still
+  # tries to compare hit with stand, and hit would leave the dealer with
+  # only one card to get to 15 only
+  cards_remaining[10] <- 7
+  s <- split(p = 1,
+             cards_remaining = cards_remaining,
+             dealer_card = 5,
+             blackjack_payout = 6/5)
+  expect_equal(s, (42/72*2 + 20/72*3 + (1 - 62/72)*4)*6/5)
+
 
   cards_remaining <- rep(0, 10)
   cards_remaining[9] <- 6
