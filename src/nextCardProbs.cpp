@@ -19,6 +19,11 @@ std::vector<double> nextCardProbs(std::vector<int> cards_remaining, int dealer_c
   }
 
   if(std::isnan(dealer_card)  || ( (dealer_card != 1) && (dealer_card != 10) ) ) {
+    //std::cout << "returning next card probs" << std::endl;
+    for(int j = 0; j < 10; ++j) {
+      std::cout << next_card_probs[j] << " ";
+    }
+    std::cout << std::endl;
     return next_card_probs;
   }
 
@@ -74,14 +79,7 @@ std::vector<double> dealer(int dealer_total, std::vector<int> cards_remaining, b
   }
 
 
-  std::vector<double> next_card_probs = nextCardProbs(cards_remaining_tmp, dealer_total);
-
-next_card_probs[4] = 20;
-  next_card_probs[5] = 100;
-  for(int xx=0; xx<10; ++xx) {
-//std::cout << next_card_probs[xx] << "   ";
-  }
-  //std::cout << std::accumulate(next_card_probs.begin(), next_card_probs.begin() + 5, 0.0) << std::endl;
+  std::vector<double> next_card_probs = nextCardProbs(cards_remaining_tmp, -1);
 
   int max_without_bust = 21 - dealer_total;
 
@@ -90,7 +88,7 @@ next_card_probs[4] = 20;
 
   // modify the dealer total by 10 (if they have an ace and are going to stand)
   if(is_ace == true && (dealer_total + 10 < 22) & (dealer_total >= 7 + hit_soft_17) ) {
-    dealer_total += 10;
+    dealer_total = dealer_total + 10;
   }
 
 
@@ -103,13 +101,13 @@ next_card_probs[4] = 20;
       std::vector<int> cards_remaining_tmp;
       cards_remaining_tmp = cards_remaining;
 
-      cards_remaining_tmp[i] = std::max(0, cards_remaining_tmp[i] - 1);
+      cards_remaining_tmp[i - 1] = std::max(0, cards_remaining_tmp[i - 1] - 1);
       int is_ace_now = is_ace || (i == 1);
 
       std::vector<double> recursive_dealer_results = dealer(dealer_total + i, cards_remaining_tmp, is_ace_now, hit_soft_17, FALSE);
 
-      for(int j = 17; j <= 21; ++j) {
-        dealer_results[j - 17] = next_card_probs[i - 1] * recursive_dealer_results[j - 17];
+      for(int j = 17; j <= 22; ++j) {
+        dealer_results[j - 17] += next_card_probs[i - 1] * recursive_dealer_results[j - 17];
       }
     }
 
@@ -117,6 +115,15 @@ next_card_probs[4] = 20;
 
   }
 
+
+  //if(next_card_probs[i-1] > 0) {
+    for(int j = 0; j < 6; ++j) {
+      std::cout << dealer_results[j] << " ";
+    }
+
+    std::cout << "dealer results to the left" << std::endl;
+
+//}
 
 
   return dealer_results;
