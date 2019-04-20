@@ -1,5 +1,6 @@
 
 
+
 #' @title hitStandProbs
 #' @description compares the hand win probability for hit and stand given the
 #' player and dealer starting cards
@@ -23,11 +24,13 @@ hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 1,
   stand_roi <- stand(player_total = p1 + p2,
                           dealer_card = d,
                           cards_remaining = cards_remaining)
+  print("done stand")
 
   hit_roi <- hit(player_total = p1 + p2,
                  dealer_card = d,
                  cards_remaining = cards_remaining,
                  is_ace = any(c(p1, p2) == 2))
+  print("done hit")
 
   split_roi <- ifelse(p1 == p2,
                       split(p = p1,
@@ -35,6 +38,7 @@ hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 1,
                             dealer_card = d,
                             blackjack_payout = blackjack_payout),
                       NA)
+  print("done split")
 
   double_down_roi <- doubleDown(player_total = p1 + p2,
                                 cards_remaining = cards_remaining,
@@ -69,6 +73,7 @@ hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 1,
 #' @return expected winnings of the split
 #' @export
 split <- function(p, cards_remaining, dealer_card, blackjack_payout, n_hands = 2) {
+
 
   next_card_probs <- nextCardProbs(cards_remaining = cards_remaining,
                                    dealer_card = dealer_card)
@@ -180,42 +185,6 @@ doubleDown <- function(player_total, cards_remaining, dealer_card, is_ace) {
 
 }
 
-#' @title nextCardProbs
-#' @description not only do we have to adjust the \code{dealer} function when he's
-#' showing 1 or 10, we have to slightly modify the player next card probs
-#' @author David Clement
-#' @param dealer_card the card the dealer has. if 1 then they can't get 10 next,
-#' if 10 then they can't get 1 next. NA is treated like 2:9
-#' @param cards_remaining vector with number of each type of card remaining
-#' @return vector of adjusted player next card probabilities
-#' @export
-nextCardProbs <- function(cards_remaining, dealer_card = NA) {
-
-  next_card_probs <- cards_remaining / sum(cards_remaining)
-
-  if(is.na(dealer_card) | dealer_card %in% 2:9) {
-    return(next_card_probs)
-  }
-
-  not_dealer_card <- ifelse(dealer_card == 1,
-                            10,
-                            1)
-  other_cards <- (1:10)[-not_dealer_card]
-
-  # increase probability of getting the card dealer can't have
-  next_card_probs[not_dealer_card] <- next_card_probs[not_dealer_card] *
-    sum(cards_remaining) / (sum(cards_remaining) - 1)
-
-  # decrease probabilities of all other cards by the same multiplicative amount
-  # while maintaining the sum to 1 constraint
-  next_card_probs[other_cards] <- next_card_probs[other_cards] *
-    (1 - next_card_probs[not_dealer_card])/sum(next_card_probs[other_cards])
-
-  return(next_card_probs)
-}
-
-
-
 
 
 #' @title hit
@@ -295,7 +264,9 @@ stand <- function(player_total, dealer_card, cards_remaining, payout_for_21 = 1)
   dealer_pmf <- dealer(dealer_total = dealer_card,
                        cards_remaining = cards_remaining,
                        is_ace = dealer_card == 1,
+                       hit_soft_17 = 1,
                        is_first = TRUE)
+  names(dealer_pmf) <- 17:22
 
   p_tie <- ifelse(player_total >= 17,
                   dealer_pmf[as.character(player_total)],
@@ -314,7 +285,7 @@ stand <- function(player_total, dealer_card, cards_remaining, payout_for_21 = 1)
 
 
 
-#' @title dealer
+#' @title dealer2
 #' @description recursive function to find dealer pmf
 #' @author David Clement
 #' @param dealer_total what the dealer total is so far
@@ -326,7 +297,7 @@ stand <- function(player_total, dealer_card, cards_remaining, payout_for_21 = 1)
 #' @return a named vector of length 6, with names 17:22 (the possible
 #' results for dealer)
 #' @export
-dealer <- function(dealer_total, cards_remaining, is_ace, hit_soft_17 = TRUE, is_first = FALSE) {
+dealer2 <- function(dealer_total, cards_remaining, is_ace, hit_soft_17 = TRUE, is_first = FALSE) {
 
   cards_remaining_tmp <- cards_remaining
 
@@ -338,7 +309,8 @@ dealer <- function(dealer_total, cards_remaining, is_ace, hit_soft_17 = TRUE, is
     cards_remaining_tmp[1] <- 0
   }
 
-  next_card_probs <- nextCardProbs(cards_remaining = cards_remaining_tmp)
+  next_card_probs <- nextCardProbs(cards_remaining = cards_remaining_tmp,
+                                   dealer_card = NA)
 
   max_without_bust <- 21 - dealer_total
 
@@ -364,7 +336,9 @@ dealer <- function(dealer_total, cards_remaining, is_ace, hit_soft_17 = TRUE, is
       possible_dealer_results <- possible_dealer_results +
         next_card_probs[i] * dealer(dealer_total = dealer_total + i,
                                     cards_remaining = cards_remaining_tmp,
-                                    is_ace = is_ace_now)
+                                    is_ace = is_ace_now,
+                                    hit_soft_17 = 1,
+                                    is_first = TRUE)
 
     }
     possible_dealer_results["22"] <- 1 - sum(possible_dealer_results[1:5])

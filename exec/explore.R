@@ -33,10 +33,12 @@ for(i in 1:100) {
 df <- expand.grid(p1 = 1:10,
                   p2 = 1:10,
                   d = 10:1) %>%
-  filter(p1 + p2 >= 12) %>%
   filter(! ((p1 == 1 & p2 == 10) | (p1 == 10 & p2 == 1))) %>%
-  arrange(desc(p1)) %>%
-  filter(!duplicated(cbind(p1 + p2, d)))
+  mutate(is_same = p1 == p2,
+         is_ace = pmin(p1, p2) == 1) %>%
+  filter(!duplicated(cbind(p1 + p2, d, is_ace, is_same))) %>%
+  arrange(desc(p1 + p2), desc(p1)) %>%
+  select(p1, p2, d)
 
 if(file.exists("data/hit_stand_choices.csv")) {
   all_choices <- read.csv("data/hit_stand_choices.csv")
@@ -55,7 +57,7 @@ for(i in 1:nrow(df)) {
     hit_stand_choice <- hitStandProbs(p1 = df$p1[i],
                                       p2 = df$p2[i],
                                       d = df$d[i],
-                                      n_decks = 6)
+                                      n_decks = 1)
     print(hit_stand_choice)
     all_choices <- bind_rows(all_choices, hit_stand_choice)
     write.csv(all_choices, file = "data/hit_stand_choices.csv", row.names = F)

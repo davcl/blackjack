@@ -17,7 +17,10 @@ test_that("test.dealer", {
   cards_remaining[c(2,7)] <- 1
   dealer_pmf <- dealer(dealer_total = 15,
                        cards_remaining = cards_remaining,
-                       is_ace = FALSE)
+                       is_ace = FALSE,
+                       hit_soft_17 = 1,
+                       is_first = TRUE)
+  names(dealer_pmf) <- 17:22
   expect_equal(as.numeric(dealer_pmf["17"]), 0.5)
   expect_equal(as.numeric(dealer_pmf["22"]), 0.5)
 
@@ -28,7 +31,9 @@ test_that("test.dealer", {
   dealer_pmf <- dealer(dealer_total = 10,
                        cards_remaining = cards_remaining,
                        is_ace = FALSE,
+                       hit_soft_17 = 1,
                        is_first = TRUE)
+  names(dealer_pmf) <- 17:22
   expect_equal(as.numeric(dealer_pmf["19"]), 0.5)
   expect_equal(as.numeric(dealer_pmf["20"]), 0.5)
 
@@ -38,7 +43,10 @@ test_that("test.dealer", {
   cards_remaining[c(5, 6, 10)] <- 1
   dealer_pmf <- dealer(dealer_total = 10,
                        cards_remaining = cards_remaining,
-                       is_ace = FALSE)
+                       is_ace = FALSE,
+                       hit_soft_17 = 1,
+                       is_first = TRUE)
+  names(dealer_pmf) <- 17:22
   expect_equal(as.numeric(dealer_pmf), c(rep(0,3), rep(1/3,3)))
 
 })
@@ -91,7 +99,10 @@ test_that("test.soft_hands", {
   cards_remaining[c(7, 10)] <- 1
   dealer_pmf <- dealer(dealer_total = 7,
                        cards_remaining = cards_remaining,
-                       is_ace = TRUE)
+                       is_ace = TRUE,
+                       hit_soft_17 = 1,
+                       is_first = TRUE)
+  names(dealer_pmf) <- 17:22
   expect_equal(as.numeric(dealer_pmf["17"]), 0.5)
   expect_equal(as.numeric(dealer_pmf["22"]), 0.5)
 
@@ -100,7 +111,10 @@ test_that("test.soft_hands", {
   cards_remaining[c(7, 10)] <- 1
   dealer_pmf <- dealer(dealer_total = 8,
                        cards_remaining = cards_remaining,
-                       is_ace = TRUE)
+                       is_ace = TRUE,
+                       hit_soft_17 = 1,
+                       is_first = TRUE)
+  names(dealer_pmf) <- 17:22
   expect_equal(as.numeric(dealer_pmf["18"]), 1)
 
 

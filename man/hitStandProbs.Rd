@@ -4,7 +4,7 @@
 \alias{hitStandProbs}
 \title{hitStandProbs}
 \usage{
-hitStandProbs(p1, p2, d, cards_gone = c(), n_decks = 6,
+hitStandProbs(p1, p2, d, cards_gone = c(), n_decks = 1,
   blackjack_payout = 6/5)
 }
 \arguments{
