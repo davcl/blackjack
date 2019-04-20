@@ -76,6 +76,13 @@ std::vector<double> dealer(int dealer_total, std::vector<int> cards_remaining, b
 
   std::vector<double> next_card_probs = nextCardProbs(cards_remaining_tmp, dealer_total);
 
+next_card_probs[4] = 20;
+  next_card_probs[5] = 100;
+  for(int xx=0; xx<10; ++xx) {
+//std::cout << next_card_probs[xx] << "   ";
+  }
+  //std::cout << std::accumulate(next_card_probs.begin(), next_card_probs.begin() + 5, 0.0) << std::endl;
+
   int max_without_bust = 21 - dealer_total;
 
   std::vector<double> dealer_results(6);
@@ -106,9 +113,11 @@ std::vector<double> dealer(int dealer_total, std::vector<int> cards_remaining, b
       }
     }
 
+    dealer_results[5] = 1 - std::accumulate(dealer_results.begin(), dealer_results.begin() + 5, 0.0);
+
   }
 
-  dealer_results[5] = 1 - std::accumulate(dealer_results.begin(), dealer_results.begin() + 5, 0.0);
+
 
   return dealer_results;
 
