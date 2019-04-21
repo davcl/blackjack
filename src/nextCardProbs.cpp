@@ -19,11 +19,6 @@ std::vector<double> nextCardProbs(std::vector<int> cards_remaining, int dealer_c
   }
 
   if(std::isnan(dealer_card)  || ( (dealer_card != 1) && (dealer_card != 10) ) ) {
-    //std::cout << "returning next card probs" << std::endl;
-    for(int j = 0; j < 10; ++j) {
-      std::cout << next_card_probs[j] << " ";
-    }
-    std::cout << std::endl;
     return next_card_probs;
   }
 
@@ -114,16 +109,6 @@ std::vector<double> dealer(int dealer_total, std::vector<int> cards_remaining, b
     dealer_results[5] = 1 - std::accumulate(dealer_results.begin(), dealer_results.begin() + 5, 0.0);
 
   }
-
-
-  //if(next_card_probs[i-1] > 0) {
-    for(int j = 0; j < 6; ++j) {
-      std::cout << dealer_results[j] << " ";
-    }
-
-    std::cout << "dealer results to the left" << std::endl;
-
-//}
 
 
   return dealer_results;
