@@ -2,31 +2,7 @@
 
 
 library(blackjack)
-
-for(i in 1:100) {
-
-  p <- sample(c(8,8), size=1)
-  y <- c(sample(1:10, size = 8, replace=T),
-                       rep(p, sample(1:2, size = 1)))
-  cards_remaining <- rep(0, 10)
-  tmp <- sort(table(y))
-  cards_remaining[as.numeric(names(tmp))] <- tmp
-
-
-  d <- sample(1:10, size=1)
-  x <- split(p = p,
-        cards_remaining = cards_remaining,
-        dealer_card = d,
-        blackjack_payout = 6/5)
-  print(paste(x, i, p, d, cards_remaining))
-
-
-}
-
-
-
-
-
+library(dplyr)
 
 
 # create data frame with possible player cards and dealer cards
@@ -49,15 +25,15 @@ if(file.exists("data/hit_stand_choices.csv")) {
 for(i in 1:nrow(df)) {
   print(i)
   # check this to not waste time refitting
-  is_row_i_done <- any(all_choices$p1 == df$p1[i] &
-                         all_choices$p2 == df$p2[i] &
-                         all_choices$d == df$d[i])
+  is_row_i_done <- any(all_choices$player_card_1 == df$p1[i] &
+                         all_choices$player_card_2 == df$p2[i] &
+                         all_choices$dealer_card == df$d[i])
 
   if(!is_row_i_done) {
     hit_stand_choice <- hitStandProbs(p1 = df$p1[i],
                                       p2 = df$p2[i],
                                       d = df$d[i],
-                                      n_decks = 1)
+                                      n_decks = 6)
     print(hit_stand_choice)
     all_choices <- bind_rows(all_choices, hit_stand_choice)
     write.csv(all_choices, file = "data/hit_stand_choices.csv", row.names = F)

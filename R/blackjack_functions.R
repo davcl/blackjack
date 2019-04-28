@@ -20,29 +20,36 @@ hitStandProbs <- function(p1, p2, d, cards_gone = c(), n_decks = 1,
   cards_gone <- c(cards_gone, p1, p2, d)
   cards_remaining <- findRemainingCards(cards_gone, n_decks)
 
-  stand_roi <- stand(player_total = p1 + p2,
+  stand_roi1 <- stand(player_total = p1 + p2,
                           dealer_card = d,
                           cards_remaining = cards_remaining)
+  stand_roi2 <- ifelse(any(c(p1, p2) == 1) & (p1 + p2 + 10 <= 21),
+                       stand(player_total = p1 + p2 + 10,
+                             dealer_card = d,
+                             cards_remaining = cards_remaining),
+                       -100)
+  stand_roi <- max(stand_roi1, stand_roi2)
   print("done stand")
 
   hit_roi <- hit(player_total = p1 + p2,
                  dealer_card = d,
                  cards_remaining = cards_remaining,
-                 is_ace = any(c(p1, p2) == 2))
+                 is_ace = any(c(p1, p2) == 1))
   print("done hit")
 
-  split_roi <- ifelse(p1 == p2,
-                      split(p = p1,
-                            cards_remaining = cards_remaining,
-                            dealer_card = d,
-                            blackjack_payout = blackjack_payout),
-                      NA)
+  split_roi <- NA
+  #split_roi <- ifelse(p1 == p2,
+  #                    split(p = p1,
+  #                          cards_remaining = cards_remaining,
+  #                          dealer_card = d,
+  #                          blackjack_payout = blackjack_payout),
+  #                    NA)
   print("done split")
 
   double_down_roi <- doubleDown(player_total = p1 + p2,
                                 cards_remaining = cards_remaining,
                                 dealer_card = d,
-                                is_ace = any(c(p1, p2) == 2))
+                                is_ace = any(c(p1, p2) == 1))
 
 
   return(data.frame(stand_roi = stand_roi,
@@ -159,12 +166,16 @@ doubleDown <- function(player_total, cards_remaining, dealer_card, is_ace) {
     cards_remaining_tmp <- cards_remaining
     cards_remaining_tmp[i] <- cards_remaining_tmp[i] - 1
 
-    r_hand <- stand(player_total = player_total + i,
-                    dealer_card = dealer_card,
-                    cards_remaining = cards_remaining_tmp)
+    r_hand <- ifelse(player_total + i <= 21,
+                     stand(player_total = player_total + i,
+                           dealer_card = dealer_card,
+                           cards_remaining = cards_remaining_tmp),
+                     -1)
+
+    is_ace_now <- is_ace | (i == 1)
 
 
-    if(is_ace & (player_total + 10 + i <= 21)) {
+    if(is_ace_now & (player_total + 10 + i <= 21)) {
       r_soft_hand <- stand(player_total = player_total + 10 + i,
                                dealer_card = dealer_card,
                           cards_remaining = cards_remaining_tmp)
